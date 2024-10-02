@@ -30,8 +30,12 @@ def main():
     image_load()
     gs = c.GameState()
     
-    valid_moves = gs.get_psuedolegal_moves()
-    print(valid_moves)
+    valid_moves = gs.get_legal_moves()
+    psuedo_legal_moves = gs.get_psuedolegal_moves()
+    for move in psuedo_legal_moves:
+        print(f'psuedo legal move: {move.moveId}', f' the amount of psuedo legal moves: {len(psuedo_legal_moves)}')
+    for move in valid_moves:
+        print(f'All legal moves: {move.moveId}', f' the amount of legal: {len(valid_moves)}')
     move_made = False
     sq_selected = () #Tuple(x,y)
     piece_selected = c.Piece(c.Piece.none, None)
@@ -71,7 +75,12 @@ def main():
                             move_made = True
                         piece_selected = c.Piece(c.Piece.none, None)
             if move_made:
-                valid_moves = gs.get_psuedolegal_moves()
+                valid_moves = gs.get_legal_moves()
+                psuedo_legal_moves = gs.get_psuedolegal_moves()
+                for move in psuedo_legal_moves:
+                    print(f'psuedo legal move: {move.moveId}', f' the amount of psuedo legal moves: {len(psuedo_legal_moves)}')
+                for move in valid_moves:
+                    print(f'All legal moves: {move.moveId}', f' the amount of legal: {len(valid_moves)}')
             if piece_selected: 
                 if piece_selected.piece_type != 0:
                     location = p.mouse.get_pos()
