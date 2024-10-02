@@ -1,3 +1,4 @@
+import copy as c
 class Piece:
     none = 0
     king = 1
@@ -32,13 +33,14 @@ class GameState():
         self.board[move.start_row][move.start_col] = Piece(Piece.none, None)
         self.board[move.end_row][move.end_col] = move.piece_moved
         self.move_log.append(move)
+        self.white_to_move = not self.white_to_move
         if move.piece_moved.piece_type == 1:
             if move.piece_moved.color == 8:
                 self.white_king_pos = (move.start_col, move.end_col)
             elif move.piece_moved.color == 16:
                 self.black_king_pos = (move.start_col, move.end_col)
             
-        self.white_to_move = not self.white_to_move
+        
     def undoMove(self):
         """
         Undo the last move
@@ -50,25 +52,44 @@ class GameState():
             self.white_to_move = not self.white_to_move  # swap players
             
     def get_legal_moves(self):
-        psuedo_legal_moves = self.get_psuedolegal_moves()
-        illegal_moves = []
-        legal_moves = []
-        for move in psuedo_legal_moves:
-            self.make_move(move)
-            move_reponse = self.get_psuedolegal_moves()
-            for second_move in move_reponse:
-                if second_move.piece_captured.piece_type == 1:
-                    illegal_moves.append(move)
-        self.undoMove()
-        
-        legal_moves = [move for move in psuedo_legal_moves if move not in illegal_moves]
-        print(f'All legal moves {legal_moves}')
-        return legal_moves
-                    
+        valid_moves = c.copy(self.get_psuedolegal_moves())
+        for n in range(len(valid_moves)-1,-1,-1):
+            self.make_move(valid_moves[n])
+            self.white_to_move = not self.white_to_move
+            if self.in_check():
+                print(f'removed move {valid_moves[n].moveId}')
+                valid_moves.remove(valid_moves[n])
+            self.white_to_move = not self.white_to_move
+            self.undoMove()
 
-
-
+        return valid_moves
     
+
+
+    def square_under_attack(self,col,row):
+        """
+        if enemy can attack a certain square
+        """
+        self.white_to_move = not self.white_to_move
+        The_opponent_reponses_that_they_can_possibly_play = self.get_psuedolegal_moves()
+        for opp_move in The_opponent_reponses_that_they_can_possibly_play:
+            print(f'possible opponent responses {opp_move.moveId} and length {len(The_opponent_reponses_that_they_can_possibly_play)}')
+        #1+1 = 2
+        self.white_to_move = not self.white_to_move
+        for opp_move in The_opponent_reponses_that_they_can_possibly_play:
+            if opp_move.end_row == row and opp_move.end_col ==col:
+                print(f'move to delete{opp_move.moveId}')
+                return True
+        return False
+    def in_check(self):
+        """
+        deterine if player in check
+        
+        """
+        if self.white_to_move:
+            return self.square_under_attack(self.white_king_pos[0], self.white_king_pos[1])
+        if not self.white_to_move:
+            return self.square_under_attack(self.black_king_pos[0], self.black_king_pos[1]) 
     def get_psuedolegal_moves(self):
         moves = []
         for row in range(len(self.board)):
@@ -303,26 +324,39 @@ class GameState():
                 target_square = self.board[row - n][col - n]
                 if target_square.color == Piece.white:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.black:
+                    moves.append(Move((col, row), (col - n, row - n), self.board))
+                    break
                 else:
                     moves.append(Move((col, row), (col - n, row - n), self.board))
             for n in range(1, min(7 - row + 1, 7- col + 1)):  # Ensure we stay within board limits
                 target_square = self.board[row + n][col + n]
                 if target_square.color == Piece.white:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.black:
+                    moves.append(Move((col, row), (col +  n, row + n), self.board))
+                    break
                 else:
                     moves.append(Move((col, row), (col +  n, row + n), self.board))
             for n in range(1, min(row+1, 7 -col + 1)):
                 target_square = self.board[row-n][col+n]
                 if target_square.color == Piece.white:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.black:
+                    moves.append(Move((col, row), (col +  n, row - n), self.board))
+                    break
                 else:
                     moves.append(Move((col, row), (col +  n, row - n), self.board))
             for n in range(1, min(7- row + 1 , col + 1)):
                 target_square = self.board[row+n][col-n]
                 if target_square.color == Piece.white:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.black:
+                    moves.append(Move((col, row), (col -  n, row + n), self.board))
+                    break
                 else:
                     moves.append(Move((col, row), (col -  n, row + n), self.board))
+
 
                 
 
@@ -332,24 +366,36 @@ class GameState():
                 target_square = self.board[row - n][col - n]
                 if target_square.color == Piece.black:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.white:
+                    moves.append(Move((col, row), (col - n, row - n), self.board))
+                    break
                 else:
                     moves.append(Move((col, row), (col - n, row - n), self.board))
             for n in range(1, min(7 - row + 1, 7- col + 1)):  # Ensure we stay within board limits
                 target_square = self.board[row + n][col + n]
                 if target_square.color == Piece.black:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.white:
+                    moves.append(Move((col, row), (col +  n, row + n), self.board))
+                    break
                 else:
                     moves.append(Move((col, row), (col +  n, row + n), self.board))
             for n in range(1, min(row+1, 7 -col + 1)):
                 target_square = self.board[row-n][col+n]
                 if target_square.color == Piece.black:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.white:
+                    moves.append(Move((col, row), (col +  n, row - n), self.board))
+                    break
                 else:
                     moves.append(Move((col, row), (col +  n, row - n), self.board))
             for n in range(1, min(7- row + 1 , col + 1)):
                 target_square = self.board[row+n][col-n]
                 if target_square.color == Piece.black:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.white:
+                    moves.append(Move((col, row), (col -  n, row + n), self.board))
+                    break
                 else:
                     moves.append(Move((col, row), (col -  n, row + n), self.board))
 
@@ -361,12 +407,20 @@ class GameState():
                 target_square = self.board[row - n][col]
                 if target_square.color == Piece.white:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.black:
+                    new_move = Move((col, row), (col, row - n), self.board)
+                    moves.append(new_move)
+                    break
                 else:
                     new_move = Move((col, row), (col, row - n), self.board)
                     moves.append(new_move)
             for n in range(1,(7-row)+1):
                 target_square = self.board[row+n][col]
                 if target_square.color == Piece.white:
+                    break
+                elif target_square.color == Piece.black:
+                    new_move = Move((col, row), (col, row+n ), self.board)
+                    moves.append(new_move)
                     break
                 else:
                     new_move = Move((col, row), (col, row+n ), self.board)
@@ -375,6 +429,10 @@ class GameState():
                 target_square = self.board[row][col-n]
                 if target_square.color == Piece.white:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.black:
+                    new_move = Move((col, row), (col-n, row), self.board)
+                    moves.append(new_move)
+                    break
                 else:
                     new_move = Move((col, row), (col-n, row), self.board)
                     moves.append(new_move)
@@ -382,23 +440,32 @@ class GameState():
                 target_square = self.board[row][col+n]
                 if target_square.color == Piece.white:
                     break
+                elif target_square.color == Piece.black:
+                    new_move = Move((col, row), (col+n,row), self.board)
+                    moves.append(new_move)
+                    break
                 else:
                     new_move = Move((col, row), (col+n,row), self.board)
                     moves.append(new_move)
-
-                    
-            
         if not self.white_to_move:
             for n in range(1, row + 1):  # Start from 1 to row (inclusive)
                 target_square = self.board[row - n][col]
                 if target_square.color == Piece.black:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.white:
+                    new_move = Move((col, row), (col, row - n), self.board)
+                    moves.append(new_move)
+                    break
                 else:
                     new_move = Move((col, row), (col, row - n), self.board)
                     moves.append(new_move)
             for n in range(1,(7-row)+1):
                 target_square = self.board[row+n][col]
                 if target_square.color == Piece.black:
+                    break
+                elif target_square.color == Piece.white:
+                    new_move = Move((col, row), (col, row+n ), self.board)
+                    moves.append(new_move)
                     break
                 else:
                     new_move = Move((col, row), (col, row+n ), self.board)
@@ -407,12 +474,20 @@ class GameState():
                 target_square = self.board[row][col-n]
                 if target_square.color == Piece.black:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.white:
+                    new_move = Move((col, row), (col-n, row), self.board)
+                    moves.append(new_move)
+                    break
                 else:
                     new_move = Move((col, row), (col-n, row), self.board)
                     moves.append(new_move)
             for n in range(1,(7-col)+1):
                 target_square = self.board[row][col+n]
                 if target_square.color == Piece.black:
+                    break
+                elif target_square.color == Piece.white:
+                    new_move = Move((col, row), (col+n,row), self.board)
+                    moves.append(new_move)
                     break
                 else:
                     new_move = Move((col, row), (col+n,row), self.board)
@@ -431,40 +506,24 @@ class GameState():
 
     def getqueenmoves(self, row, col, moves):
         if self.white_to_move:
-            for n in range(1, min(row + 1, col + 1)):  # Ensure we stay within board limits
-                target_square = self.board[row - n][col - n]
-                if target_square.color == Piece.white:
-                    break  # Stop if a friendly piece is encountered
-                else:
-                    moves.append(Move((col, row), (col - n, row - n), self.board))
-            for n in range(1, min(7 - row + 1, 7- col + 1)):  # Ensure we stay within board limits
-                target_square = self.board[row + n][col + n]
-                if target_square.color == Piece.white:
-                    break  # Stop if a friendly piece is encountered
-                else:
-                    moves.append(Move((col, row), (col +  n, row + n), self.board))
-            for n in range(1, min(row+1, 7 -col + 1)):
-                target_square = self.board[row-n][col+n]
-                if target_square.color == Piece.white:
-                    break  # Stop if a friendly piece is encountered
-                else:
-                    moves.append(Move((col, row), (col +  n, row - n), self.board))
-            for n in range(1, min(7- row + 1 , col + 1)):
-                target_square = self.board[row+n][col-n]
-                if target_square.color == Piece.white:
-                    break  # Stop if a friendly piece is encountered
-                else:
-                    moves.append(Move((col, row), (col -  n, row + n), self.board))
             for n in range(1, row + 1):  # Start from 1 to row (inclusive)
                 target_square = self.board[row - n][col]
                 if target_square.color == Piece.white:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.black:
+                    new_move = Move((col, row), (col, row - n), self.board)
+                    moves.append(new_move)
+                    break
                 else:
                     new_move = Move((col, row), (col, row - n), self.board)
                     moves.append(new_move)
             for n in range(1,(7-row)+1):
                 target_square = self.board[row+n][col]
                 if target_square.color == Piece.white:
+                    break
+                elif target_square.color == Piece.black:
+                    new_move = Move((col, row), (col, row+n ), self.board)
+                    moves.append(new_move)
                     break
                 else:
                     new_move = Move((col, row), (col, row+n ), self.board)
@@ -473,6 +532,10 @@ class GameState():
                 target_square = self.board[row][col-n]
                 if target_square.color == Piece.white:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.black:
+                    new_move = Move((col, row), (col-n, row), self.board)
+                    moves.append(new_move)
+                    break
                 else:
                     new_move = Move((col, row), (col-n, row), self.board)
                     moves.append(new_move)
@@ -480,45 +543,69 @@ class GameState():
                 target_square = self.board[row][col+n]
                 if target_square.color == Piece.white:
                     break
+                elif target_square.color == Piece.black:
+                    new_move = Move((col, row), (col+n,row), self.board)
+                    moves.append(new_move)
+                    break
                 else:
                     new_move = Move((col, row), (col+n,row), self.board)
                     moves.append(new_move)
+                for n in range(1, min(row + 1, col + 1)):  # Ensure we stay within board limits
+                    target_square = self.board[row - n][col - n]
+                    if target_square.color == Piece.white:
+                        break  # Stop if a friendly piece is encountered
+                    elif target_square.color == Piece.black:
+                        moves.append(Move((col, row), (col - n, row - n), self.board))
+                        break
+                    else:
+                        moves.append(Move((col, row), (col - n, row - n), self.board))
+            for n in range(1, min(7 - row + 1, 7- col + 1)):  # Ensure we stay within board limits
+                target_square = self.board[row + n][col + n]
+                if target_square.color == Piece.white:
+                    break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.black:
+                    moves.append(Move((col, row), (col +  n, row + n), self.board))
+                    break
+                else:
+                    moves.append(Move((col, row), (col +  n, row + n), self.board))
+            for n in range(1, min(row+1, 7 -col + 1)):
+                target_square = self.board[row-n][col+n]
+                if target_square.color == Piece.white:
+                    break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.black:
+                    moves.append(Move((col, row), (col +  n, row - n), self.board))
+                    break
+                else:
+                    moves.append(Move((col, row), (col +  n, row - n), self.board))
+            for n in range(1, min(7- row + 1 , col + 1)):
+                target_square = self.board[row+n][col-n]
+                if target_square.color == Piece.white:
+                    break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.black:
+                    moves.append(Move((col, row), (col -  n, row + n), self.board))
+                    break
+                else:
+                    moves.append(Move((col, row), (col -  n, row + n), self.board))
 
         if not self.white_to_move:
-            for n in range(1, min(row + 1, col + 1)):  # Ensure we stay within board limits
-                target_square = self.board[row - n][col - n]
-                if target_square.color == Piece.black:
-                    break  # Stop if a friendly piece is encountered
-                else:
-                    moves.append(Move((col, row), (col - n, row - n), self.board))
-            for n in range(1, min(7 - row + 1, 7- col + 1)):  # Ensure we stay within board limits
-                target_square = self.board[row + n][col + n]
-                if target_square.color == Piece.black:
-                    break  # Stop if a friendly piece is encountered
-                else:
-                    moves.append(Move((col, row), (col +  n, row + n), self.board))
-            for n in range(1, min(row+1, 7 -col + 1)):
-                target_square = self.board[row-n][col+n]
-                if target_square.color == Piece.black:
-                    break  # Stop if a friendly piece is encountered
-                else:
-                    moves.append(Move((col, row), (col +  n, row - n), self.board))
-            for n in range(1, min(7- row + 1 , col + 1)):
-                target_square = self.board[row+n][col-n]
-                if target_square.color == Piece.black:
-                    break  # Stop if a friendly piece is encountered
-                else:
-                    moves.append(Move((col, row), (col -  n, row + n), self.board))
             for n in range(1, row + 1):  # Start from 1 to row (inclusive)
                 target_square = self.board[row - n][col]
                 if target_square.color == Piece.black:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.white:
+                    new_move = Move((col, row), (col, row - n), self.board)
+                    moves.append(new_move)
+                    break
                 else:
                     new_move = Move((col, row), (col, row - n), self.board)
                     moves.append(new_move)
             for n in range(1,(7-row)+1):
                 target_square = self.board[row+n][col]
                 if target_square.color == Piece.black:
+                    break
+                elif target_square.color == Piece.white:
+                    new_move = Move((col, row), (col, row+n ), self.board)
+                    moves.append(new_move)
                     break
                 else:
                     new_move = Move((col, row), (col, row+n ), self.board)
@@ -527,6 +614,10 @@ class GameState():
                 target_square = self.board[row][col-n]
                 if target_square.color == Piece.black:
                     break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.white:
+                    new_move = Move((col, row), (col-n, row), self.board)
+                    moves.append(new_move)
+                    break
                 else:
                     new_move = Move((col, row), (col-n, row), self.board)
                     moves.append(new_move)
@@ -534,10 +625,50 @@ class GameState():
                 target_square = self.board[row][col+n]
                 if target_square.color == Piece.black:
                     break
+                elif target_square.color == Piece.white:
+                    new_move = Move((col, row), (col+n,row), self.board)
+                    moves.append(new_move)
+                    break
                 else:
                     new_move = Move((col, row), (col+n,row), self.board)
-
                     moves.append(new_move)
+            for n in range(1, min(row + 1, col + 1)):  # Ensure we stay within board limits
+                target_square = self.board[row - n][col - n]
+                if target_square.color == Piece.black:
+                    break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.white:
+                    moves.append(Move((col, row), (col - n, row - n), self.board))
+                    break
+                else:
+                    moves.append(Move((col, row), (col - n, row - n), self.board))
+            for n in range(1, min(7 - row + 1, 7- col + 1)):  # Ensure we stay within board limits
+                target_square = self.board[row + n][col + n]
+                if target_square.color == Piece.black:
+                    break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.white:
+                    moves.append(Move((col, row), (col +  n, row + n), self.board))
+                    break
+                else:
+                    moves.append(Move((col, row), (col +  n, row + n), self.board))
+            for n in range(1, min(row+1, 7 -col + 1)):
+                target_square = self.board[row-n][col+n]
+                if target_square.color == Piece.black:
+                    break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.white:
+                    moves.append(Move((col, row), (col +  n, row - n), self.board))
+                    break
+                else:
+                    moves.append(Move((col, row), (col +  n, row - n), self.board))
+            for n in range(1, min(7- row + 1 , col + 1)):
+                target_square = self.board[row+n][col-n]
+                if target_square.color == Piece.black:
+                    break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.white:
+                    moves.append(Move((col, row), (col -  n, row + n), self.board))
+                    break
+                else:
+                    moves.append(Move((col, row), (col -  n, row + n), self.board))
+            
             
 
 
@@ -556,12 +687,7 @@ class Move():
     We must overide an equals method here.
     '''
     def __eq__(self, other):
-        print("Checking equality:", self.moveId, "with", getattr(other, 'moveId', 'None'))
         if isinstance(other, Move):
             return self.moveId == other.moveId
         else:
             return False
-
-    
-
-

@@ -5,3 +5,28 @@ x   x
   x  
 x   x
 Great!
+#illegal_moves = []
+        #psuedo_legal_moves = self.get_psuedolegal_moves()
+        #legal_moves = []
+        #for move in psuedo_legal_moves:
+            #self.make_move(move)
+            #if self.checked_king(move):
+                #illegal_moves.append(move)
+            #self.undoMove()
+        #legal_moves = [move for move in psuedo_legal_moves if move not in illegal_moves]
+        #for move in legal_moves:
+            #print(f'here are the moves: {move.moveId}')
+        #return legal_moves
+    def in_check(self):
+        pass
+    #def checked_king(self,move):
+        #possible_moves = self.get_psuedolegal_moves()
+        #if self.white_to_move:
+            #for move in possible_moves:
+                #if move.end_col == self.black_king_pos[0] and move.end_row == self.black_king_pos[1]:
+                    #return True
+        #if not self.white_to_move:
+            #for move in possible_moves:
+                #if move.end_col == self.white_king_pos[0] and move.end_row == self.white_king_pos[1]:
+                    #return True
+        #return False
