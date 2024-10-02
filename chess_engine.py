@@ -29,17 +29,20 @@ class GameState():
         self.move_log = []
         self.white_king_pos = (4,7)
         self.black_king_pos = (4,0)
-    def make_move(self, move):
+        self.are_we_in_check = False
+        self.the_pins = []
+        self.all_checks = []
+    def make_move(self, move):    
         self.board[move.start_row][move.start_col] = Piece(Piece.none, None)
         self.board[move.end_row][move.end_col] = move.piece_moved
         self.move_log.append(move)
         self.white_to_move = not self.white_to_move
-        if move.piece_moved.piece_type == 1:
-            if move.piece_moved.color == 8:
-                self.white_king_pos = (move.start_col, move.end_col)
-            elif move.piece_moved.color == 16:
-                self.black_king_pos = (move.start_col, move.end_col)
-            
+        if move.piece_moved.color == 8 and move.piece_moved.piece_type == 1:
+            self.white_king_pos = (move.end_col, move.end_row)
+        elif move.piece_moved.color == 16 and move.piece_moved.piece_type == 1:
+            self.black_king_pos = (move.end_col, move.end_row)
+        
+        
         
     def undoMove(self):
         """
@@ -50,18 +53,19 @@ class GameState():
             self.board[move.start_row][move.start_col] = move.piece_moved
             self.board[move.end_row][move.end_col] = move.piece_captured
             self.white_to_move = not self.white_to_move  # swap players
-            
+            if move.piece_moved.color == 8 and move.piece_moved.piece_type == 1:
+                self.white_king_pos = (move.start_col, move.start_row)
+            elif move.piece_moved.color == 16 and move.piece_moved.piece_type == 1:
+                self.black_king_pos = (move.start_col, move.start_row)
     def get_legal_moves(self):
         valid_moves = c.copy(self.get_psuedolegal_moves())
         for n in range(len(valid_moves)-1,-1,-1):
             self.make_move(valid_moves[n])
             self.white_to_move = not self.white_to_move
             if self.in_check():
-                print(f'removed move {valid_moves[n].moveId}')
                 valid_moves.remove(valid_moves[n])
             self.white_to_move = not self.white_to_move
             self.undoMove()
-
         return valid_moves
     
 
@@ -71,16 +75,12 @@ class GameState():
         if enemy can attack a certain square
         """
         self.white_to_move = not self.white_to_move
-        The_opponent_reponses_that_they_can_possibly_play = self.get_psuedolegal_moves()
-        for opp_move in The_opponent_reponses_that_they_can_possibly_play:
-            print(f'possible opponent responses {opp_move.moveId} and length {len(The_opponent_reponses_that_they_can_possibly_play)}')
-        #1+1 = 2
+        opponent_moves = self.get_psuedolegal_moves()
         self.white_to_move = not self.white_to_move
-        for opp_move in The_opponent_reponses_that_they_can_possibly_play:
-            if opp_move.end_row == row and opp_move.end_col ==col:
-                print(f'move to delete{opp_move.moveId}')
+        for move in opponent_moves:
+            if move.end_row == row and move.end_col == col:
                 return True
-        return False
+        return False    
     def in_check(self):
         """
         deterine if player in check
@@ -89,7 +89,8 @@ class GameState():
         if self.white_to_move:
             return self.square_under_attack(self.white_king_pos[0], self.white_king_pos[1])
         if not self.white_to_move:
-            return self.square_under_attack(self.black_king_pos[0], self.black_king_pos[1]) 
+            return self.square_under_attack(self.black_king_pos[0], self.black_king_pos[1])
+     
     def get_psuedolegal_moves(self):
         moves = []
         for row in range(len(self.board)):
@@ -167,7 +168,7 @@ class GameState():
         if self.white_to_move:
             if (row+1) <= 7:
                 target_square = self.board[row+1][col]
-                if target_square.color == Piece.white:
+                if target_square.color == Piece.black:
                     pass
                 else:
                     new_move = Move((col,row), (col, row+1), self.board)
@@ -175,49 +176,49 @@ class GameState():
 
             if (col + 1 )<=7:
                 target_square = self.board[row][col+1]
-                if target_square.color == Piece.white:
+                if target_square.color == Piece.black:
                     pass
                 else:
                     new_move = Move((col,row), (col+1,row), self.board)
                     moves.append(new_move)
             if (row-1) >=0:
                 target_square = self.board[row-1][col]
-                if target_square.color == Piece.white:
+                if target_square.color == Piece.black:
                     pass
                 else:
                     new_move = Move((col,row), (col, row-1), self.board)
                     moves.append(new_move)
             if (col-1) >= 0:
                 target_square = self.board[row][col-1]
-                if target_square.color == Piece.white:
+                if target_square.color == Piece.black:
                     pass
                 else:
                     new_move = Move((col,row), (col-1, row), self.board)
                     moves.append(new_move)
             if (row-1)>=0 and (col-1)>=0:
                 target_square = self.board[row-1][col-1]
-                if target_square.color == Piece.white:
+                if target_square.color == Piece.black:
                     pass
                 else:
                     new_move = Move((col,row), (col-1, row-1), self.board)
                     moves.append(new_move)
             if (row-1)>=0 and (col+1)<=7:
                 target_square = self.board[row-1][col+1]
-                if target_square.color == Piece.white:
+                if target_square.color == Piece.black:
                     pass
                 else:
                     new_move = Move((col,row), (col+1, row-1), self.board)
                     moves.append(new_move)
             if (row+1) <=7 and (col-1)>=0:
                 target_square = self.board[row+1][col-1]
-                if target_square.color == Piece.white:
+                if target_square.color == Piece.black:
                     pass
                 else:
                     new_move = Move((col,row), (col-1, row+1), self.board)
                     moves.append(new_move)
             if (row+1)<=7 and (col+1) <=7:
                 target_square = self.board[row+1][col+1]
-                if target_square.color == Piece.white:
+                if target_square.color == Piece.black:
                     pass
                 else:
                     new_move = Move((col,row), (col+1, row+1), self.board)
@@ -244,6 +245,7 @@ class GameState():
                     pass
                 else:
                     new_move = Move((col,row), (col, row-1), self.board)
+                    moves.append(new_move)
             if (col-1) >= 0:
                 target_square = self.board[row][col-1]
                 if target_square.color == Piece.black:
@@ -257,7 +259,6 @@ class GameState():
                     pass
                 else:
                     new_move = Move((col,row), (col-1, row-1), self.board)
-                    
                     moves.append(new_move)
             if (row-1)>=0 and (col+1)<=7:
                 target_square = self.board[row-1][col+1]
@@ -272,7 +273,6 @@ class GameState():
                     pass
                 else:
                     new_move = Move((col,row), (col-1, row+1), self.board)
-                    
                     moves.append(new_move)
             if (row+1)<=7 and (col+1) <=7:
                 target_square = self.board[row+1][col+1]
@@ -280,8 +280,8 @@ class GameState():
                     pass
                 else:
                     new_move = Move((col,row), (col+1, row+1), self.board)
-                    
                     moves.append(new_move)
+            
 
         
 
@@ -550,15 +550,15 @@ class GameState():
                 else:
                     new_move = Move((col, row), (col+n,row), self.board)
                     moves.append(new_move)
-                for n in range(1, min(row + 1, col + 1)):  # Ensure we stay within board limits
-                    target_square = self.board[row - n][col - n]
-                    if target_square.color == Piece.white:
-                        break  # Stop if a friendly piece is encountered
-                    elif target_square.color == Piece.black:
-                        moves.append(Move((col, row), (col - n, row - n), self.board))
-                        break
-                    else:
-                        moves.append(Move((col, row), (col - n, row - n), self.board))
+            for n in range(1, min(row + 1, col + 1)):  # Ensure we stay within board limits
+                target_square = self.board[row - n][col - n]
+                if target_square.color == Piece.white:
+                    break  # Stop if a friendly piece is encountered
+                elif target_square.color == Piece.black:
+                    moves.append(Move((col, row), (col - n, row - n), self.board))
+                    break
+                else:
+                    moves.append(Move((col, row), (col - n, row - n), self.board))
             for n in range(1, min(7 - row + 1, 7- col + 1)):  # Ensure we stay within board limits
                 target_square = self.board[row + n][col + n]
                 if target_square.color == Piece.white:
